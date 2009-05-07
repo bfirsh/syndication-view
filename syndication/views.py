@@ -29,9 +29,8 @@ class Feed(object):
         
     def __call__(self, request, *args, **kwargs):
         self.feed_url = self.feed_url or request.path
-        print self.feed_url
         try:
-            obj = self.get_object(*args, **kwargs)
+            obj = self.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
             raise Http404
         feedgen = self.get_feed(obj, request)
@@ -80,7 +79,7 @@ class Feed(object):
         """
         return {}
  
-    def get_object(self, *args, **kwargs):
+    def get_object(self, request, *args, **kwargs):
         return None
  
     def get_feed(self, obj, request):

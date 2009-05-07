@@ -7,7 +7,7 @@ from django.utils import tzinfo
 
 
 class ComplexFeed(views.Feed):
-    def get_object(self, foo=None):
+    def get_object(self, request, foo=None):
         if foo is not None:
             raise ObjectDoesNotExist
         return None
