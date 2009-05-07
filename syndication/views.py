@@ -29,6 +29,7 @@ class Feed(object):
         
     def __call__(self, request, *args, **kwargs):
         self.feed_url = self.feed_url or request.path
+        print self.feed_url
         try:
             obj = self.get_object(*args, **kwargs)
         except ObjectDoesNotExist:
@@ -172,3 +173,29 @@ class Feed(object):
                 **self.item_extra_kwargs(item)
             )
         return feed
+
+
+def feed(request, url, feed_dict=None):
+    """Provided for backwards compatibility."""
+    if not feed_dict:
+        raise Http404, "No feeds are registered."
+
+    try:
+        slug, param = url.split('/', 1)
+    except ValueError:
+        slug, param = url, ''
+
+    try:
+        f = feed_dict[slug]
+    except KeyError:
+        raise Http404, "Slug %r isn't registered." % slug
+
+    try:
+        feedgen = f(slug, request).get_feed(param)
+    except FeedDoesNotExist:
+        raise Http404, "Invalid feed parameters. Slug %r is valid, but other parameters, or lack thereof, are not." % slug
+
+    response = HttpResponse(mimetype=feedgen.mime_type)
+    feedgen.write(response, 'utf-8')
+    return response
+
