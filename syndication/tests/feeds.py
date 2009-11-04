@@ -1,6 +1,6 @@
 
 from syndication import views
-from syndication.models import Entry
+from syndication.tests.models import Entry
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils.feedgenerator import Atom1Feed
 from django.utils import tzinfo
@@ -17,7 +17,6 @@ class TestRssFeed(views.Feed):
     title = 'My blog'
     
     def items(self):
-        from syndication.models import Entry
         return Entry.objects.all()
         
     def item_link(self, item):

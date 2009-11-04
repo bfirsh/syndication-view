@@ -1,82 +1,24 @@
-# Tests for backwards compatibility with <=1.1 feeds
-
 import datetime
-from xml.dom import minidom
-from syndication import feeds
-from syndication.tests.models import Entry
-from django.core.exceptions import ObjectDoesNotExist
 from django.test import TestCase
 from django.utils.feedgenerator import Atom1Feed
 from django.utils import tzinfo
+from syndication import feedgenerator
+from syndication.tests.models import Entry
+from xml.dom import minidom
 
 try:
     set
 except NameError:
     from sets import Set as set
 
-class ComplexFeed(feeds.Feed):
-    def get_object(self, bits):
-        if len(bits) != 1:
-            raise ObjectDoesNotExist
-        return None
- 
-class TestRssFeed(feeds.Feed):
-    link = "/blog/"
-    title = 'My blog'
-    
-    def items(self):
-        return Entry.objects.all()
-        
-    def item_link(self, item):
-        return "/blog/%s/" % item.pk
- 
-class TestAtomFeed(TestRssFeed):
-    feed_type = Atom1Feed
- 
-class MyCustomAtom1Feed(Atom1Feed):
-    """
-    Test of a custom feed generator class.
-    """    
-    def root_attributes(self):
-        attrs = super(MyCustomAtom1Feed, self).root_attributes()
-        attrs[u'django'] = u'rocks'
-        return attrs
-        
-    def add_root_elements(self, handler):
-        super(MyCustomAtom1Feed, self).add_root_elements(handler)
-        handler.addQuickElement(u'spam', u'eggs')
-        
-    def item_attributes(self, item):
-        attrs = super(MyCustomAtom1Feed, self).item_attributes(item)
-        attrs[u'bacon'] = u'yum'
-        return attrs
-        
-    def add_item_elements(self, handler, item):
-        super(MyCustomAtom1Feed, self).add_item_elements(handler, item)
-        handler.addQuickElement(u'ministry', u'silly walks')
-    
-class TestCustomFeed(TestAtomFeed):
-    feed_type = MyCustomAtom1Feed
-    
-class NaiveDatesFeed(TestAtomFeed):
-    """
-    A feed with naive (non-timezone-aware) dates.
-    """
-    def item_pubdate(self, item):
-        return item.date
-        
-class TZAwareDatesFeed(TestAtomFeed):
-    """
-    A feed with timezone-aware dates.
-    """
-    def item_pubdate(self, item):
-        # Provide a weird offset so that the test can know it's getting this
-        # specific offset and not accidentally getting on from 
-        # settings.TIME_ZONE.
-        return item.date.replace(tzinfo=tzinfo.FixedOffset(42))
+# Other tests
+from syndication.tests.depreciated import DepreciatedSyndicationFeedTest
 
+######################################
+# Feed view
+######################################
 
-class DepreciatedSyndicationFeedTest(TestCase):
+class SyndicationFeedTest(TestCase):
     fixtures = ['test_entries.json']
  
     def assertChildNodes(self, elem, expected):
@@ -85,7 +27,7 @@ class DepreciatedSyndicationFeedTest(TestCase):
         self.assertEqual(actual, expected)
  
     def test_rss_feed(self):
-        response = self.client.get('/depr-feeds/rss/')
+        response = self.client.get('/rss/')
         doc = minidom.parseString(response.content)
         
         # Making sure there's only 1 `rss` element and that the correct
@@ -108,7 +50,7 @@ class DepreciatedSyndicationFeedTest(TestCase):
             self.assertChildNodes(item, ['title', 'link', 'description', 'guid'])
     
     def test_atom_feed(self):
-        response = self.client.get('/depr-feeds/atom/')
+        response = self.client.get('/atom/')
         doc = minidom.parseString(response.content)
         
         feed = doc.firstChild
@@ -124,7 +66,7 @@ class DepreciatedSyndicationFeedTest(TestCase):
             self.assertEqual(summary.getAttribute('type'), 'html')
     
     def test_custom_feed_generator(self):
-        response = self.client.get('/depr-feeds/custom/')
+        response = self.client.get('/custom/')
         doc = minidom.parseString(response.content)
         
         feed = doc.firstChild
@@ -145,14 +87,14 @@ class DepreciatedSyndicationFeedTest(TestCase):
         Tests that that the base url for a complex feed doesn't raise a 500
         exception.
         """
-        response = self.client.get('/depr-feeds/complex/')
+        response = self.client.get('/complex/bar/')
         self.assertEquals(response.status_code, 404)
  
     def test_title_escaping(self):
         """
         Tests that titles are escaped correctly in RSS feeds.
         """
-        response = self.client.get('/depr-feeds/rss/')
+        response = self.client.get('/rss/')
         doc = minidom.parseString(response.content)
         for item in doc.getElementsByTagName('item'):
             link = item.getElementsByTagName('link')[0]
@@ -166,7 +108,7 @@ class DepreciatedSyndicationFeedTest(TestCase):
         """
         # Naive date times passed in get converted to the local time zone, so
         # check the recived zone offset against the local offset.
-        response = self.client.get('/depr-feeds/naive-dates/')
+        response = self.client.get('/naive-dates/')
         doc = minidom.parseString(response.content)
         updated = doc.getElementsByTagName('updated')[0].firstChild.wholeText        
         tz = tzinfo.LocalTimezone(datetime.datetime.now())
@@ -177,8 +119,19 @@ class DepreciatedSyndicationFeedTest(TestCase):
         """
         Test that datetimes with timezones don't get trodden on.
         """
-        response = self.client.get('/depr-feeds/aware-dates/')
+        response = self.client.get('/aware-dates/')
         doc = minidom.parseString(response.content)
         updated = doc.getElementsByTagName('updated')[0].firstChild.wholeText
         self.assertEqual(updated[-6:], '+00:42')
+
+######################################
+# feedgenerator
+######################################
+
+class FeedgeneratorTest(TestCase):
+    def test_get_tag_uri(self):
+        self.assertEqual(
+            feedgenerator.get_tag_uri('http://www.example.org:8000/2008/11/14/django#headline', datetime.datetime(2008, 11, 14, 13, 37, 0)),
+            u'tag:www.example.org,2008-11-14:/2008/11/14/django/headline')
+
 
