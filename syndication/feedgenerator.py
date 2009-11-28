@@ -187,7 +187,8 @@ class RssFeed(SyndicationFeed):
         handler.endElement(u"rss")
 
     def rss_attributes(self):
-        return {u"version": self._version}
+        return {u"version": self._version,
+                u"xmlns:atom": "http://www.w3.org/2005/Atom"}
 
     def write_items(self, handler):
         for item in self.items:
@@ -199,6 +200,7 @@ class RssFeed(SyndicationFeed):
         handler.addQuickElement(u"title", self.feed['title'])
         handler.addQuickElement(u"link", self.feed['link'])
         handler.addQuickElement(u"description", self.feed['description'])
+        handler.addQuickElement(u"atom:link", None, {u"rel": u"self", u"href": self.feed['feed_url']})
         if self.feed['language'] is not None:
             handler.addQuickElement(u"language", self.feed['language'])
         for cat in self.feed['categories']:

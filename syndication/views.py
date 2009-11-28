@@ -1,13 +1,12 @@
 from datetime import datetime, timedelta
-
 from django.conf import settings
 from django.contrib.sites.models import Site, RequestSite
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.http import HttpResponse, Http404
 from django.template import loader, Template, TemplateDoesNotExist, RequestContext
-from django.utils import feedgenerator
 from django.utils.encoding import smart_unicode, iri_to_uri
 from django.utils.tzinfo import FixedOffset
+from syndication import feedgenerator
 
 def add_domain(domain, url):
     if not (url.startswith('http://') or url.startswith('https://')):

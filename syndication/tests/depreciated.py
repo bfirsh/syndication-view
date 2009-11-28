@@ -100,7 +100,7 @@ class DepreciatedSyndicationFeedTest(TestCase):
         chan_elem = feed.getElementsByTagName('channel')
         self.assertEqual(len(chan_elem), 1)
         chan = chan_elem[0]
-        self.assertChildNodes(chan, ['title', 'link', 'description', 'language', 'lastBuildDate', 'item'])
+        self.assertChildNodes(chan, ['title', 'link', 'description', 'language', 'lastBuildDate', 'item', 'atom:link'])
     
         items = chan.getElementsByTagName('item')
         self.assertEqual(len(items), Entry.objects.count())

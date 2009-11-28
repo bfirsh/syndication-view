@@ -47,13 +47,19 @@ class SyndicationFeedTest(TestCase):
         chan_elem = feed.getElementsByTagName('channel')
         self.assertEqual(len(chan_elem), 1)
         chan = chan_elem[0]
-        self.assertChildNodes(chan, ['title', 'link', 'description', 'language', 'lastBuildDate', 'item'])
+        self.assertChildNodes(chan, ['title', 'link', 'description', 'language', 'lastBuildDate', 'item', 'atom:link'])
        
        # Ensure the content of the channel is correct
         self.assertChildNodeContent(chan, {
             'title': 'My blog',
             'link': 'http://testserver/blog/',
         })
+        
+        # Check feed_url is passed
+        self.assertEqual(
+            chan.getElementsByTagName('atom:link')[0].getAttribute('href'),
+            'http://testserver/rss/'
+        )
         
         items = chan.getElementsByTagName('item')
         self.assertEqual(len(items), Entry.objects.count())
