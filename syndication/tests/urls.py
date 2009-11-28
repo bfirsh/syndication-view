@@ -3,12 +3,8 @@ from syndication.tests import depreciated, feeds
 from django.conf.urls.defaults import *
  
 feed_dict = {
-    'complex': depreciated.ComplexFeed,
-    'rss': depreciated.TestRssFeed,
-    'atom': depreciated.TestAtomFeed,
-    'custom': depreciated.TestCustomFeed,
-    'naive-dates': depreciated.NaiveDatesFeed,
-    'aware-dates': depreciated.TZAwareDatesFeed,    
+    'complex': feeds.DepreciatedComplexFeed,
+    'rss': feeds.DepreciatedRssFeed,
 }
 urlpatterns = patterns('',
     (r'^complex/(?P<foo>.*)/$', feeds.ComplexFeed()),
@@ -18,5 +14,8 @@ urlpatterns = patterns('',
     (r'^naive-dates/$', feeds.NaiveDatesFeed()),
     (r'^aware-dates/$', feeds.TZAwareDatesFeed()),
     (r'^feedurl/$', feeds.TestFeedUrlFeed()),
-    (r'^depr-feeds/(?P<url>.*)/$', 'syndication.views.feed', {'feed_dict': feed_dict})
+    (r'^articles/$', feeds.ArticlesFeed()),
+    
+    (r'^depr-feeds/(?P<url>.*)/$', 'syndication.views.feed', {'feed_dict': feed_dict}),
+    (r'^depr-feeds-empty/(?P<url>.*)/$', 'syndication.views.feed', {'feed_dict': None}),
 )

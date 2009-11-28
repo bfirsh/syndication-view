@@ -1,8 +1,9 @@
 import datetime
+from django.core.exceptions import ImproperlyConfigured
 from django.test import TestCase
 from django.utils.feedgenerator import Atom1Feed
 from django.utils import tzinfo
-from syndication import feedgenerator
+from syndication import feedgenerator, feeds
 from syndication.tests.models import Entry
 from xml.dom import minidom
 
@@ -11,16 +12,9 @@ try:
 except NameError:
     from sets import Set as set
 
-# Other tests
-from syndication.tests.depreciated import DepreciatedSyndicationFeedTest
-
-######################################
-# Feed view
-######################################
-
-class SyndicationFeedTest(TestCase):
+class FeedTestCase(TestCase):
     fixtures = ['test_entries.json']
- 
+
     def assertChildNodes(self, elem, expected):
         actual = set([n.nodeName for n in elem.childNodes])
         expected = set(expected)
@@ -30,7 +24,13 @@ class SyndicationFeedTest(TestCase):
         for k, v in expected.items():
             self.assertEqual(
                 elem.getElementsByTagName(k)[0].firstChild.wholeText, v)
-    
+
+
+######################################
+# Feed view
+######################################
+
+class SyndicationFeedTest(FeedTestCase):
     def test_rss_feed(self):
         response = self.client.get('/rss/')
         doc = minidom.parseString(response.content)
@@ -104,7 +104,7 @@ class SyndicationFeedTest(TestCase):
         
     def test_complex_base_url(self):
         """
-        Tests that that the base url for a complex feed doesn't raise a 500
+        Tests that the base url for a complex feed doesn't raise a 500
         exception.
         """
         response = self.client.get('/complex/bar/')
@@ -153,6 +153,15 @@ class SyndicationFeedTest(TestCase):
         for link in doc.firstChild.getElementsByTagName('link'):
             if link.getAttribute('rel') == 'self':
                 self.assertEqual(link.getAttribute('href'), 'http://example.com/customfeedurl/')
+    
+    def test_item_link_error(self):
+        """
+        Test that a ImproperlyConfigured is raised if no link could be found
+        for the item(s).
+        """
+        self.assertRaises(ImproperlyConfigured,
+                          self.client.get,
+                          '/articles/')
 
 
 ######################################
@@ -165,4 +174,43 @@ class FeedgeneratorTest(TestCase):
             feedgenerator.get_tag_uri('http://www.example.org:8000/2008/11/14/django#headline', datetime.datetime(2008, 11, 14, 13, 37, 0)),
             u'tag:www.example.org,2008-11-14:/2008/11/14/django/headline')
 
+
+######################################
+# Depreciated feeds
+######################################
+
+class DepreciatedSyndicationFeedTest(FeedTestCase):
+    def test_empty_feed_dict(self):
+        """
+        Test that an empty feed_dict raises a 404.
+        """
+        response = self.client.get('/depr-feeds-empty/aware-dates/')
+        self.assertEquals(response.status_code, 404)
+
+    def test_nonexistent_slug(self):
+        """
+        Test that a non-existent slug raises a 404.
+        """
+        response = self.client.get('/depr-feeds/foobar/')
+        self.assertEquals(response.status_code, 404)
+    
+    def test_rss_feed(self):
+        response = self.client.get('/depr-feeds/rss/')
+        doc = minidom.parseString(response.content)
+        feed = doc.getElementsByTagName('rss')[0]
+        self.assertEqual(feed.getAttribute('version'), '2.0')
+        
+        chan = feed.getElementsByTagName('channel')[0]
+        self.assertChildNodes(chan, ['title', 'link', 'description', 'language', 'lastBuildDate', 'item', 'atom:link'])
+    
+        items = chan.getElementsByTagName('item')
+        self.assertEqual(len(items), Entry.objects.count())
+    
+    def test_complex_base_url(self):
+        """
+        Tests that the base url for a complex feed doesn't raise a 500 
+        exception.
+        """
+        response = self.client.get('/depr-feeds/complex/')
+        self.assertEquals(response.status_code, 404)
 
