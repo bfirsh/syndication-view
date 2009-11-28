@@ -25,7 +25,12 @@ class SyndicationFeedTest(TestCase):
         actual = set([n.nodeName for n in elem.childNodes])
         expected = set(expected)
         self.assertEqual(actual, expected)
- 
+    
+    def assertChildNodeContent(self, elem, expected):
+        for k, v in expected.items():
+            self.assertEqual(
+                elem.getElementsByTagName(k)[0].firstChild.wholeText, v)
+    
     def test_rss_feed(self):
         response = self.client.get('/rss/')
         doc = minidom.parseString(response.content)
@@ -43,7 +48,13 @@ class SyndicationFeedTest(TestCase):
         self.assertEqual(len(chan_elem), 1)
         chan = chan_elem[0]
         self.assertChildNodes(chan, ['title', 'link', 'description', 'language', 'lastBuildDate', 'item'])
-    
+       
+       # Ensure the content of the channel is correct
+        self.assertChildNodeContent(chan, {
+            'title': 'My blog',
+            'link': 'http://testserver/blog/',
+        })
+        
         items = chan.getElementsByTagName('item')
         self.assertEqual(len(items), Entry.objects.count())
         for item in items:
@@ -56,7 +67,10 @@ class SyndicationFeedTest(TestCase):
         feed = doc.firstChild
         self.assertEqual(feed.nodeName, 'feed')
         self.assertEqual(feed.getAttribute('xmlns'), 'http://www.w3.org/2005/Atom') 
-        self.assertChildNodes(feed, ['title', 'link', 'id', 'updated', 'entry'])        
+        self.assertChildNodes(feed, ['title', 'link', 'id', 'updated', 'entry'])
+        for link in feed.getElementsByTagName('link'):
+            if link.getAttribute('rel') == 'self':
+                self.assertEqual(link.getAttribute('href'), 'http://testserver/atom/')
         
         entries = feed.getElementsByTagName('entry')
         self.assertEqual(len(entries), Entry.objects.count())
@@ -123,6 +137,17 @@ class SyndicationFeedTest(TestCase):
         doc = minidom.parseString(response.content)
         updated = doc.getElementsByTagName('updated')[0].firstChild.wholeText
         self.assertEqual(updated[-6:], '+00:42')
+    
+    def test_feed_url(self):
+        """
+        Test that the feed_url can be overridden.
+        """
+        response = self.client.get('/feedurl/')
+        doc = minidom.parseString(response.content)
+        for link in doc.firstChild.getElementsByTagName('link'):
+            if link.getAttribute('rel') == 'self':
+                self.assertEqual(link.getAttribute('href'), 'http://example.com/customfeedurl/')
+
 
 ######################################
 # feedgenerator

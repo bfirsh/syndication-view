@@ -20,15 +20,11 @@ class FeedDoesNotExist(ObjectDoesNotExist):
     pass
 
 class Feed(object):
-    item_pubdate = None
-    item_enclosure_url = None
     feed_type = feedgenerator.DefaultFeed
-    feed_url = None
     title_template = None
     description_template = None
         
     def __call__(self, request, *args, **kwargs):
-        self.feed_url = self.feed_url or request.path
         try:
             obj = self.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
@@ -102,7 +98,7 @@ class Feed(object):
             description = self.__get_dynamic_attr('description', obj),
             language = settings.LANGUAGE_CODE.decode(),
             feed_url = add_domain(current_site.domain,
-                                  self.__get_dynamic_attr('feed_url', obj)),
+                    self.__get_dynamic_attr('feed_url', obj) or request.path),
             author_name = self.__get_dynamic_attr('author_name', obj),
             author_link = self.__get_dynamic_attr('author_link', obj),
             author_email = self.__get_dynamic_attr('author_email', obj),

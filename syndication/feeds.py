@@ -7,7 +7,7 @@ class Feed(views.Feed):
     def __init__(self, slug, request):
         self.slug = slug
         self.request = request
-        self.feed_url = self.feed_url or request.path
+        self.feed_url = getattr(self, 'feed_url', None) or request.path
         self.title_template = self.title_template or ('feeds/%s_title.html' % slug)
         self.description_template = self.description_template or ('feeds/%s_description.html' % slug)
 

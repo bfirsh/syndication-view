@@ -66,3 +66,6 @@ class TZAwareDatesFeed(TestAtomFeed):
         # specific offset and not accidentally getting on from 
         # settings.TIME_ZONE.
         return item.date.replace(tzinfo=tzinfo.FixedOffset(42))
+
+class TestFeedUrlFeed(TestAtomFeed):
+    feed_url = 'http://example.com/customfeedurl/'

@@ -17,5 +17,6 @@ urlpatterns = patterns('',
     (r'^custom/$', feeds.TestCustomFeed()),
     (r'^naive-dates/$', feeds.NaiveDatesFeed()),
     (r'^aware-dates/$', feeds.TZAwareDatesFeed()),
+    (r'^feedurl/$', feeds.TestFeedUrlFeed()),
     (r'^depr-feeds/(?P<url>.*)/$', 'syndication.views.feed', {'feed_dict': feed_dict})
 )
