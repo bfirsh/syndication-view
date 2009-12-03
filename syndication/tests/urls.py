@@ -15,6 +15,7 @@ urlpatterns = patterns('',
     (r'^aware-dates/$', feeds.TZAwareDatesFeed()),
     (r'^feedurl/$', feeds.TestFeedUrlFeed()),
     (r'^articles/$', feeds.ArticlesFeed()),
+    (r'^template/$', feeds.TemplateFeed()),
     
     (r'^depr-feeds/(?P<url>.*)/$', 'syndication.views.feed', {'feed_dict': feed_dict}),
     (r'^depr-feeds-empty/(?P<url>.*)/$', 'syndication.views.feed', {'feed_dict': None}),

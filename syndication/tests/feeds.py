@@ -16,6 +16,9 @@ class TestRssFeed(views.Feed):
     link = "/blog/"
     title = 'My blog'
     
+    def item_description(self, item):
+        return "Overridden description: %s" % item
+    
     def items(self):
         return Entry.objects.all()
 
@@ -25,10 +28,15 @@ class ArticlesFeed(TestRssFeed):
         return Article.objects.all()
 
 
+class TemplateFeed(TestRssFeed):
+    title_template = 'title.html'
+    description_template = 'description.html'
+
+
 class TestAtomFeed(TestRssFeed):
     feed_type = Atom1Feed
- 
- 
+
+
 class MyCustomAtom1Feed(Atom1Feed):
     """
     Test of a custom feed generator class.

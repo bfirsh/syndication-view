@@ -48,8 +48,8 @@ class SyndicationFeedTest(FeedTestCase):
         self.assertEqual(len(chan_elem), 1)
         chan = chan_elem[0]
         self.assertChildNodes(chan, ['title', 'link', 'description', 'language', 'lastBuildDate', 'item', 'atom:link'])
-       
-       # Ensure the content of the channel is correct
+        
+        # Ensure the content of the channel is correct
         self.assertChildNodeContent(chan, {
             'title': 'My blog',
             'link': 'http://testserver/blog/',
@@ -63,6 +63,11 @@ class SyndicationFeedTest(FeedTestCase):
         
         items = chan.getElementsByTagName('item')
         self.assertEqual(len(items), Entry.objects.count())
+        self.assertChildNodeContent(items[0], {
+            'title': 'My first entry',
+            'description': 'Overridden description: My first entry',
+            'link': 'http://testserver/blog/1/',
+        })
         for item in items:
             self.assertChildNodes(item, ['title', 'link', 'description', 'guid'])
     
@@ -162,6 +167,23 @@ class SyndicationFeedTest(FeedTestCase):
         self.assertRaises(ImproperlyConfigured,
                           self.client.get,
                           '/articles/')
+    
+    def test_template_feed(self):
+        """
+        Check that the item title and description can be overridden with 
+        templates.
+        """
+        response = self.client.get('/template/')
+        doc = minidom.parseString(response.content)
+        feed = doc.getElementsByTagName('rss')[0]
+        chan = feed.getElementsByTagName('channel')[0]
+        items = chan.getElementsByTagName('item')
+        
+        self.assertChildNodeContent(items[0], {
+            'title': 'Title in your templates: My first entry',
+            'description': 'Description in your templates: My first entry',
+            'link': 'http://testserver/blog/1/',
+        })
 
 
 ######################################

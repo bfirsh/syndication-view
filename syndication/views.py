@@ -4,7 +4,7 @@ from django.contrib.sites.models import Site, RequestSite
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.http import HttpResponse, Http404
 from django.template import loader, Template, TemplateDoesNotExist, RequestContext
-from django.utils.encoding import smart_unicode, iri_to_uri
+from django.utils.encoding import force_unicode, iri_to_uri, smart_unicode
 from django.utils.tzinfo import FixedOffset
 from syndication import feedgenerator
 
@@ -32,7 +32,13 @@ class Feed(object):
         response = HttpResponse(mimetype=feedgen.mime_type)
         feedgen.write(response, 'utf-8')
         return response
-
+    
+    def item_title(self, item):
+        return force_unicode(item)
+    
+    def item_description(self, item):
+        return force_unicode(item)
+    
     def item_link(self, item):
         try:
             return item.get_absolute_url()
@@ -107,17 +113,30 @@ class Feed(object):
             ttl = self.__get_dynamic_attr('ttl', obj),
             **self.feed_extra_kwargs(obj)
         )
- 
-        try:
-            title_tmp = loader.get_template(self.title_template)
-        except TemplateDoesNotExist:
-            title_tmp = Template('{{ obj }}')
-        try:
-            description_tmp = loader.get_template(self.description_template)
-        except TemplateDoesNotExist:
-            description_tmp = Template('{{ obj }}')
+        
+        title_tmp = None
+        if self.title_template is not None:
+            try:
+                title_tmp = loader.get_template(self.title_template)
+            except TemplateDoesNotExist:
+                pass
+            
+        description_tmp = None
+        if self.description_template is not None:
+            try:
+                description_tmp = loader.get_template(self.description_template)
+            except TemplateDoesNotExist:
+                pass
  
         for item in self.__get_dynamic_attr('items', obj):
+            if title_tmp is not None:
+                title = title_tmp.render(RequestContext(request, {'obj': item, 'site': current_site}))
+            else:
+                title = self.__get_dynamic_attr('item_title', item)
+            if description_tmp is not None:
+                description = description_tmp.render(RequestContext(request, {'obj': item, 'site': current_site}))
+            else:
+                description = self.__get_dynamic_attr('item_description', item)
             link = add_domain(current_site.domain, self.__get_dynamic_attr('item_link', item))
             enc = None
             enc_url = self.__get_dynamic_attr('item_enclosure_url', item)
@@ -151,11 +170,11 @@ class Feed(object):
                 tzOffsetMinutes = sign * ((tzDifference.seconds / 60 + 15) / 30) * 30
                 tzOffset = timedelta(minutes=tzOffsetMinutes)
                 pubdate = pubdate.replace(tzinfo=FixedOffset(tzOffset))
- 
+            
             feed.add_item(
-                title = title_tmp.render(RequestContext(request, {'obj': item, 'site': current_site})),
+                title = title,
                 link = link,
-                description = description_tmp.render(RequestContext(request, {'obj': item, 'site': current_site})),
+                description = description,
                 unique_id = self.__get_dynamic_attr('item_guid', item, link),
                 enclosure = enc,
                 pubdate = pubdate,

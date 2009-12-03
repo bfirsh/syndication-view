@@ -4,6 +4,9 @@ class Entry(models.Model):
     title = models.CharField(max_length=200)
     date = models.DateTimeField()
     
+    class Meta:
+        ordering = ('date',)
+    
     def __unicode__(self):
         return self.title
     
