@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+import datetime
 from django.conf import settings
 from django.contrib.sites.models import Site, RequestSite
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
@@ -156,8 +156,8 @@ class Feed(object):
  
             pubdate = self.__get_dynamic_attr('item_pubdate', item)
             if pubdate and not pubdate.tzinfo:
-                now = datetime.now()
-                utcnow = datetime.utcnow()
+                now = datetime.datetime.now()
+                utcnow = datetime.datetime.utcnow()
  
                 # Must always subtract smaller time from larger time here.
                 if utcnow > now:
@@ -169,7 +169,7 @@ class Feed(object):
  
                 # Round the timezone offset to the nearest half hour.
                 tzOffsetMinutes = sign * ((tzDifference.seconds / 60 + 15) / 30) * 30
-                tzOffset = timedelta(minutes=tzOffsetMinutes)
+                tzOffset = datetime.timedelta(minutes=tzOffsetMinutes)
                 pubdate = pubdate.replace(tzinfo=FixedOffset(tzOffset))
             
             feed.add_item(
