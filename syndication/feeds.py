@@ -1,6 +1,8 @@
 from django.core.exceptions import ObjectDoesNotExist
 
 from syndication import views
+# This is part of the depreciated API, so import it directly
+from syndication.views import FeedDoesNotExist
 
 class Feed(views.Feed):
     """Provided for backwards compatibility."""
@@ -26,5 +28,5 @@ class Feed(views.Feed):
         try:
             obj = self.get_object(bits)
         except ObjectDoesNotExist:
-            raise views.FeedDoesNotExist
+            raise FeedDoesNotExist
         return super(Feed, self).get_feed(obj, self.request)

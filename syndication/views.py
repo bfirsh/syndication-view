@@ -18,6 +18,7 @@ def add_domain(domain, url):
 class FeedDoesNotExist(ObjectDoesNotExist):
     pass
 
+
 class Feed(object):
     feed_type = feedgenerator.DefaultFeed
     title_template = None
