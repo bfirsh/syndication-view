@@ -22,7 +22,6 @@ http://diveintomark.org/archives/2004/02/04/incompatible-rss
 import datetime
 from django.utils.xmlutils import SimplerXMLGenerator
 from django.utils.encoding import force_unicode, iri_to_uri
-import re
 import urlparse
 
 def rfc2822_date(date):
@@ -47,7 +46,11 @@ def rfc3339_date(date):
         return date.strftime('%Y-%m-%dT%H:%M:%SZ')
 
 def get_tag_uri(url, date):
-    "Creates a TagURI. See http://diveintomark.org/archives/2004/05/28/howto-atom-id"
+    """
+    Creates a TagURI. 
+    
+    See http://diveintomark.org/archives/2004/05/28/howto-atom-id
+    """
     url_split = urlparse.urlparse(url)
     d = ''
     if date is not None:
