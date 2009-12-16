@@ -65,6 +65,9 @@ class SyndicationFeed(object):
         to_unicode = lambda s: force_unicode(s, strings_only=True)
         if categories:
             categories = [force_unicode(c) for c in categories]
+        if ttl is not None:
+            # Force ints to unicode
+            ttl = force_unicode(ttl)
         self.feed = {
             'title': to_unicode(title),
             'link': iri_to_uri(link),
@@ -95,6 +98,9 @@ class SyndicationFeed(object):
         to_unicode = lambda s: force_unicode(s, strings_only=True)
         if categories:
             categories = [to_unicode(c) for c in categories]
+        if ttl is not None:
+            # Force ints to unicode
+            ttl = force_unicode(ttl)
         item = {
             'title': to_unicode(title),
             'link': iri_to_uri(link),
@@ -191,7 +197,7 @@ class RssFeed(SyndicationFeed):
 
     def rss_attributes(self):
         return {u"version": self._version,
-                u"xmlns:atom": "http://www.w3.org/2005/Atom"}
+                u"xmlns:atom": u"http://www.w3.org/2005/Atom"}
 
     def write_items(self, handler):
         for item in self.items:
@@ -241,7 +247,7 @@ class Rss201rev2Feed(RssFeed):
         elif item["author_email"]:
             handler.addQuickElement(u"author", item["author_email"])
         elif item["author_name"]:
-            handler.addQuickElement(u"dc:creator", item["author_name"], {"xmlns:dc": u"http://purl.org/dc/elements/1.1/"})
+            handler.addQuickElement(u"dc:creator", item["author_name"], {u"xmlns:dc": u"http://purl.org/dc/elements/1.1/"})
 
         if item['pubdate'] is not None:
             handler.addQuickElement(u"pubDate", rfc2822_date(item['pubdate']).decode('utf-8'))

@@ -1,7 +1,6 @@
 from django.core.exceptions import ObjectDoesNotExist
 from django.utils import tzinfo
-from django.utils.feedgenerator import Atom1Feed
-from syndication import feeds, views
+from syndication import feedgenerator, feeds, views
 from syndication.tests.models import Article, Entry
 
 
@@ -12,32 +11,92 @@ class ComplexFeed(views.Feed):
         return None
 
 
-class TestRssFeed(views.Feed):
-    link = "/blog/"
+class TestRss2Feed(views.Feed):
     title = 'My blog'
+    description = 'A more thorough description of my blog.'
+    link = '/blog/'
+    feed_guid = '/foo/bar/1234'
+    author_name = 'Sally Smith'
+    author_email = 'test@example.com'
+    author_link = 'http://www.example.com/'
+    categories = ('python', 'django')
+    feed_copyright = 'Copyright (c) 2007, Sally Smith'
+    ttl = 600
+    
+    def items(self):
+        return Entry.objects.all()
     
     def item_description(self, item):
         return "Overridden description: %s" % item
     
-    def items(self):
-        return Entry.objects.all()
+    def item_pubdate(self, item):
+        return item.date
+    
+    item_author_name = 'Sally Smith'
+    item_author_email = 'test@example.com'
+    item_author_link = 'http://www.example.com/'
+    item_categories = ('python', 'testing')
+    item_copyright = 'Copyright (c) 2007, Sally Smith'
 
 
-class ArticlesFeed(TestRssFeed):
+class TestRss091Feed(TestRss2Feed):
+    feed_type = feedgenerator.RssUserland091Feed
+
+
+class TestAtomFeed(TestRss2Feed):
+    feed_type = feedgenerator.Atom1Feed
+    subtitle = TestRss2Feed.description
+
+
+class ArticlesFeed(TestRss2Feed):
+    """
+    A feed to test no link being defined. Articles have no get_absolute_url() 
+    method, and item_link() is not defined.
+    """
     def items(self):
         return Article.objects.all()
 
 
-class TemplateFeed(TestRssFeed):
+class TestEnclosureFeed(TestRss2Feed):
+    pass
+
+
+class TemplateFeed(TestRss2Feed):
+    """
+    A feed to test defining item titles and descriptions with templates.
+    """
     title_template = 'title.html'
     description_template = 'description.html'
+    
+    # Defining a template overrides any item_title definition
+    def item_title(self):
+        return "Not in a template"
 
 
-class TestAtomFeed(TestRssFeed):
-    feed_type = Atom1Feed
+class NaiveDatesFeed(TestAtomFeed):
+    """
+    A feed with naive (non-timezone-aware) dates.
+    """
+    def item_pubdate(self, item):
+        return item.date
 
 
-class MyCustomAtom1Feed(Atom1Feed):
+class TZAwareDatesFeed(TestAtomFeed):
+    """
+    A feed with timezone-aware dates.
+    """
+    def item_pubdate(self, item):
+        # Provide a weird offset so that the test can know it's getting this
+        # specific offset and not accidentally getting on from 
+        # settings.TIME_ZONE.
+        return item.date.replace(tzinfo=tzinfo.FixedOffset(42))
+
+
+class TestFeedUrlFeed(TestAtomFeed):
+    feed_url = 'http://example.com/customfeedurl/'
+
+
+class MyCustomAtom1Feed(feedgenerator.Atom1Feed):
     """
     Test of a custom feed generator class.
     """    
@@ -62,28 +121,6 @@ class MyCustomAtom1Feed(Atom1Feed):
 
 class TestCustomFeed(TestAtomFeed):
     feed_type = MyCustomAtom1Feed
-
-
-class NaiveDatesFeed(TestAtomFeed):
-    """
-    A feed with naive (non-timezone-aware) dates.
-    """
-    def item_pubdate(self, item):
-        return item.date
-        
-class TZAwareDatesFeed(TestAtomFeed):
-    """
-    A feed with timezone-aware dates.
-    """
-    def item_pubdate(self, item):
-        # Provide a weird offset so that the test can know it's getting this
-        # specific offset and not accidentally getting on from 
-        # settings.TIME_ZONE.
-        return item.date.replace(tzinfo=tzinfo.FixedOffset(42))
-
-
-class TestFeedUrlFeed(TestAtomFeed):
-    feed_url = 'http://example.com/customfeedurl/'
 
 
 class DepreciatedComplexFeed(feeds.Feed):
