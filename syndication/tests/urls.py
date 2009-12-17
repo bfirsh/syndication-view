@@ -1,4 +1,4 @@
-from syndication.tests import depreciated, feeds
+from syndication.tests import feeds
 
 from django.conf.urls.defaults import *
  
