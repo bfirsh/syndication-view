@@ -5,6 +5,7 @@ from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.http import HttpResponse, Http404
 from django.template import loader, Template, TemplateDoesNotExist, RequestContext
 from django.utils.encoding import force_unicode, iri_to_uri, smart_unicode
+from django.utils.html import escape
 from django.utils.tzinfo import FixedOffset
 from syndication import feedgenerator
 
@@ -35,7 +36,8 @@ class Feed(object):
         return response
     
     def item_title(self, item):
-        return force_unicode(item)
+        # Titles should be double escaped by default (see #6533)
+        return escape(force_unicode(item))
     
     def item_description(self, item):
         return force_unicode(item)

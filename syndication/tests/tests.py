@@ -186,7 +186,7 @@ class SyndicationFeedTest(FeedTestCase):
         doc = minidom.parseString(response.content)
         for item in doc.getElementsByTagName('item'):
             link = item.getElementsByTagName('link')[0]
-            if link.firstChild.wholeText == 'http://example.com/blog/4/':
+            if link.firstChild.wholeText == 'http://testserver/blog/4/':
                 title = item.getElementsByTagName('title')[0]
                 self.assertEquals(title.firstChild.wholeText, u'A &amp; B &lt; C &gt; D')
                 
