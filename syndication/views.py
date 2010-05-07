@@ -4,17 +4,22 @@ from django.contrib.sites.models import Site, RequestSite
 from django.core.exceptions import ImproperlyConfigured, ObjectDoesNotExist
 from django.http import HttpResponse, Http404
 from django.template import loader, Template, TemplateDoesNotExist, RequestContext
+from django.utils import tzinfo
 from django.utils.encoding import force_unicode, iri_to_uri, smart_unicode
 from django.utils.html import escape
-from django.utils.tzinfo import FixedOffset
+
 from syndication import feedgenerator
 
+
 def add_domain(domain, url):
-    if not (url.startswith('http://') or url.startswith('https://')):
+    if not (url.startswith('http://')
+            or url.startswith('https://')
+            or url.startswith('mailto:')):
         # 'url' must already be ASCII and URL-quoted, so no need for encoding
         # conversions here.
         url = iri_to_uri(u'http://%s%s' % (domain, url))
     return url
+
 
 class FeedDoesNotExist(ObjectDoesNotExist):
     pass
@@ -24,30 +29,30 @@ class Feed(object):
     feed_type = feedgenerator.DefaultFeed
     title_template = None
     description_template = None
-        
+
     def __call__(self, request, *args, **kwargs):
         try:
             obj = self.get_object(request, *args, **kwargs)
         except ObjectDoesNotExist:
-            raise Http404
+            raise Http404('Feed object does not exist.')
         feedgen = self.get_feed(obj, request)
         response = HttpResponse(mimetype=feedgen.mime_type)
         feedgen.write(response, 'utf-8')
         return response
-    
+
     def item_title(self, item):
         # Titles should be double escaped by default (see #6533)
         return escape(force_unicode(item))
-    
+
     def item_description(self, item):
         return force_unicode(item)
-    
+
     def item_link(self, item):
         try:
             return item.get_absolute_url()
         except AttributeError:
-            raise ImproperlyConfigured, "Give your %s class a get_absolute_url() method, or define an item_link() method in your Feed class." % item.__class__.__name__
- 
+            raise ImproperlyConfigured('Give your %s class a get_absolute_url() method, or define an item_link() method in your Feed class.' % item.__class__.__name__)
+
     def __get_dynamic_attr(self, attname, obj, default=None):
         try:
             attr = getattr(self, attname)
@@ -67,25 +72,24 @@ class Feed(object):
             else:
                 return attr()
         return attr
-        
-        
+
     def feed_extra_kwargs(self, obj):
         """
         Returns an extra keyword arguments dictionary that is used when
         initializing the feed generator.
         """
         return {}
- 
+
     def item_extra_kwargs(self, item):
         """
         Returns an extra keyword arguments dictionary that is used with
         the `add_item` call of the feed generator.
         """
         return {}
- 
+
     def get_object(self, request, *args, **kwargs):
         return None
- 
+
     def get_feed(self, obj, request):
         """
         Returns a feedgenerator.DefaultFeed object, fully populated, for
@@ -95,10 +99,10 @@ class Feed(object):
             current_site = Site.objects.get_current()
         else:
             current_site = RequestSite(request)
-        
+
         link = self.__get_dynamic_attr('link', obj)
         link = add_domain(current_site.domain, link)
- 
+
         feed = self.feed_type(
             title = self.__get_dynamic_attr('title', obj),
             subtitle = self.__get_dynamic_attr('subtitle', obj),
@@ -116,21 +120,21 @@ class Feed(object):
             ttl = self.__get_dynamic_attr('ttl', obj),
             **self.feed_extra_kwargs(obj)
         )
-        
+
         title_tmp = None
         if self.title_template is not None:
             try:
                 title_tmp = loader.get_template(self.title_template)
             except TemplateDoesNotExist:
                 pass
-            
+
         description_tmp = None
         if self.description_template is not None:
             try:
                 description_tmp = loader.get_template(self.description_template)
             except TemplateDoesNotExist:
                 pass
- 
+
         for item in self.__get_dynamic_attr('items', obj):
             if title_tmp is not None:
                 title = title_tmp.render(RequestContext(request, {'obj': item, 'site': current_site}))
@@ -155,25 +159,12 @@ class Feed(object):
                 author_link = self.__get_dynamic_attr('item_author_link', item)
             else:
                 author_email = author_link = None
- 
+
             pubdate = self.__get_dynamic_attr('item_pubdate', item)
             if pubdate and not pubdate.tzinfo:
-                now = datetime.datetime.now()
-                utcnow = datetime.datetime.utcnow()
- 
-                # Must always subtract smaller time from larger time here.
-                if utcnow > now:
-                    sign = -1
-                    tzDifference = (utcnow - now)
-                else:
-                    sign = 1
-                    tzDifference = (now - utcnow)
- 
-                # Round the timezone offset to the nearest half hour.
-                tzOffsetMinutes = sign * ((tzDifference.seconds / 60 + 15) / 30) * 30
-                tzOffset = datetime.timedelta(minutes=tzOffsetMinutes)
-                pubdate = pubdate.replace(tzinfo=FixedOffset(tzOffset))
-            
+                ltz = tzinfo.LocalTimezone(pubdate)
+                pubdate = pubdate.replace(tzinfo=ltz)
+
             feed.add_item(
                 title = title,
                 link = link,
@@ -193,8 +184,13 @@ class Feed(object):
 
 def feed(request, url, feed_dict=None):
     """Provided for backwards compatibility."""
+    import warnings
+    warnings.warn('The syndication feed() view is deprecated. Please use the '
+                  'new class based view API.',
+                  category=PendingDeprecationWarning)
+
     if not feed_dict:
-        raise Http404, "No feeds are registered."
+        raise Http404("No feeds are registered.")
 
     try:
         slug, param = url.split('/', 1)
@@ -204,12 +200,12 @@ def feed(request, url, feed_dict=None):
     try:
         f = feed_dict[slug]
     except KeyError:
-        raise Http404, "Slug %r isn't registered." % slug
+        raise Http404("Slug %r isn't registered." % slug)
 
     try:
         feedgen = f(slug, request).get_feed(param)
     except FeedDoesNotExist:
-        raise Http404, "Invalid feed parameters. Slug %r is valid, but other parameters, or lack thereof, are not." % slug
+        raise Http404("Invalid feed parameters. Slug %r is valid, but other parameters, or lack thereof, are not." % slug)
 
     response = HttpResponse(mimetype=feedgen.mime_type)
     feedgen.write(response, 'utf-8')
