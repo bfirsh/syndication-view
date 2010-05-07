@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
  
 setup(
     name='django-syndication-view',
-    version='0.1',
+    version='0.1.dev1',
     description='Django feeds as a class based views.',
     author='Ben Firshman',
     author_email='ben@firshman.co.uk',
