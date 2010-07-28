@@ -3,7 +3,7 @@ from django.core.exceptions import ObjectDoesNotExist
 import warnings
 
 # This is part of the deprecated API
-from django.contrib.syndication.views import FeedDoesNotExist, add_domain
+from syndication.views import FeedDoesNotExist
 
 class Feed(views.Feed):
     """Provided for backwards compatibility."""

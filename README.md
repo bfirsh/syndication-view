@@ -2,8 +2,13 @@ syndication-view
 ================
 
 syndication-view is a refactor of Django's syndication contrib app, primarily to 
-turn feeds into class-based views, but will also fix a number of [long standing 
+turn feeds into class-based views, but also fixes a number of [long standing 
 tickets](http://code.djangoproject.com/query?status=new&status=assigned&status=reopened&component=RSS+framework&order=priority).
+
+As of [revision 
+12338](http://github.com/django/django/commit/5d592a351fe66a225a25), 
+syndication-view is a part of Django and is included in version 1.2. This 
+repository is maintained as a backport for Django 1.1.x.
 
 Installation
 ------------
