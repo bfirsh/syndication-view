@@ -1,4 +1,4 @@
-from django.contrib.syndication import views
+from syndication import views
 from django.core.exceptions import ObjectDoesNotExist
 import warnings
 
